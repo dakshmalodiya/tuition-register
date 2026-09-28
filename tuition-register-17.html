@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tuition Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+    --paper: #FAF7F0;
+    --paper-raised: #FFFFFF;
+    --ink: #232A25;
+    --ink-soft: #5B6660;
+    --rule: #DAD3C2;
+    --spine: #24433A;
+    --spine-ink: #F1EEE4;
+    --mustard: #C6892E;
+    --mustard-soft: #F3E3C6;
+    --brick: #A24A38;
+    --brick-soft: #F3DED8;
+    --moss: #3F7554;
+    --moss-soft: #DCEADF;
+    --focus: #2F6FED;
+    --shadow: rgba(35, 42, 37, 0.12);
+  }
+
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #191D1A;
+      --paper-raised: #20251F;
+      --ink: #EDEBE3;
+      --ink-soft: #A7AFA8;
+      --rule: #3A413A;
+      --spine: #14241E;
+      --spine-ink: #E8E4D6;
+      --mustard: #D89B41;
+      --mustard-soft: #3A2E17;
+      --brick: #C46953;
+      --brick-soft: #3A2320;
+      --moss: #6FAE83;
+      --moss-soft: #1E2E22;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #191D1A;
+    --paper-raised: #20251F;
+    --ink: #EDEBE3;
+    --ink-soft: #A7AFA8;
+    --rule: #3A413A;
+    --spine: #14241E;
+    --spine-ink: #E8E4D6;
+    --mustard: #D89B41;
+    --mustard-soft: #3A2E17;
+    --brick: #C46953;
+    --brick-soft: #3A2320;
+    --moss: #6FAE83;
+    --moss-soft: #1E2E22;
+    --shadow: rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .title-font {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  input, select {
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  /* ---------- layout ---------- */
+
+  .app {
+    display: flex;
+    min-height: 100%;
+  }
+
+  .spine {
+    flex: 0 0 220px;
+    background: var(--spine);
+    color: var(--spine-ink);
+    padding: 28px 18px;
+    padding-top: calc(28px + env(safe-area-inset-top, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .spine-mark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .spine-mark .num {
+    font-family: "Fraunces", serif;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .spine-mark .label {
+    font-size: 12.5px;
+    color: var(--mustard);
+    letter-spacing: 0.02em;
+  }
+
+  .spine h1 {
+    font-size: 21px;
+    line-height: 1.25;
+    color: var(--spine-ink);
+  }
+
+  .spine-sub {
+    font-size: 12.5px;
+    color: #B9C4BC;
+  }
+
+  .sync-badge {
+    font-size: 11.5px;
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: #CBD5CD;
+  }
+  .sync-badge.synced { background: rgba(63,117,84,0.35); color: #B7E0C4; }
+  .sync-badge.local { background: rgba(198,137,46,0.3); color: #F0D19E; }
+
+  nav.tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  nav.tabs button {
+    all: unset;
+    padding: 10px 10px;
+    border-radius: 7px;
+    font-size: 14.5px;
+    color: #CBD5CD;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  nav.tabs button:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  nav.tabs button.active {
+    background: rgba(255,255,255,0.12);
+    color: var(--spine-ink);
+    font-weight: 500;
+  }
+
+  nav.tabs button .count {
+    font-size: 12px;
+    color: #92A297;
+  }
+
+  nav.tabs button.active .count { color: var(--mustard); }
+
+  .spine-foot {
+    margin-top: auto;
+    font-size: 12px;
+    color: #7C8A81;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 14px;
+  }
+
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 32px 40px 64px;
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .view-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .view-head h2 { font-size: 26px; }
+  .view-head .sub { color: var(--ink-soft); font-size: 13.5px; margin-top: 4px; }
+
+  .btn {
+    border: 1px solid var(--rule);
+    background: var(--paper-raised);
+    color: var(--ink);
+    padding: 9px 16px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { border-color: var(--ink-soft); }
+  .btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .btn-primary {
+    background: var(--spine);
+    border-color: var(--spine);
+    color: var(--spine-ink);
+  }
+  .btn-primary:hover { background: #1B362D; }
+
+  .btn-danger {
+    background: var(--paper-raised);
+    border-color: var(--brick);
+    color: var(--brick);
+  }
+  .btn-danger:hover { background: var(--brick-soft); }
+
+  .btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 6px; }
+
+  /* ---------- dashboard ---------- */
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+
+  .stat-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .stat-card .n {
+    font-family: "Fraunces", serif;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .stat-card .l {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .stat-card.warn .n { color: var(--mustard); }
+  .stat-card.good .n { color: var(--moss); }
+  .stat-card.bad .n { color: var(--brick); }
+
+  .panel {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+
+  .panel h3 {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13.5px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-row .name { flex: 0 0 130px; color: var(--ink-soft); }
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-row .val { flex: 0 0 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---------- students list ---------- */
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 180px;
+    border: 1px solid var(--rule);
+    background: var(--paper-raised);
+    border-radius: 7px;
+    padding: 9px 12px;
+    color: var(--ink);
+  }
+  .search-box:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+  .register {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--paper-raised);
+  }
+
+  .reg-row {
+    display: grid;
+    grid-template-columns: 2.1fr 1fr 1fr 0.9fr 0.9fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 13.5px;
+  }
+  .reg-row:last-child { border-bottom: none; }
+  .reg-row.head {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    text-transform: none;
+    background: var(--mustard-soft);
+    font-weight: 500;
+  }
+  .reg-row.item { cursor: pointer; }
+  .reg-row.item:hover { background: rgba(198, 137, 46, 0.06); }
+
+  .reg-row .nm { font-weight: 500; }
+  .reg-row .ph { color: var(--ink-soft); font-size: 12.5px; }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .pill.paid { background: var(--moss-soft); color: var(--moss); }
+  .pill.pending { background: var(--mustard-soft); color: var(--mustard); }
+  .pill.done { background: var(--moss-soft); color: var(--moss); }
+  .pill.hwpending { background: var(--brick-soft); color: var(--brick); }
+
+  .empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+
+  /* ---------- detail / modal ---------- */
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 24, 20, 0.42);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 5vh 16px;
+    overflow-y: auto;
+    z-index: 50;
+  }
+  .overlay.open { display: flex; }
+
+  .sheet {
+    background: var(--paper-raised);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 560px;
+    padding: 26px 26px 24px;
+    box-shadow: 0 20px 50px var(--shadow);
+  }
+
+  .sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    gap: 10px;
+  }
+
+  .sheet-head h3 { font-size: 20px; }
+  .icon-x {
+    all: unset;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 20px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .icon-x:hover { background: var(--rule); color: var(--ink); }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12px; color: var(--ink-soft); }
+  .field input, .field select {
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    padding: 9px 11px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .field input:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  .sheet-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  /* detail sheet specifics */
+
+  .detail-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .detail-name { font-size: 21px; }
+  .detail-sub { color: var(--ink-soft); font-size: 13px; margin-top: 3px; }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+    margin: 18px 0;
+    font-size: 13.5px;
+  }
+  .detail-grid .k { color: var(--ink-soft); font-size: 11.5px; margin-bottom: 2px; }
+  .detail-grid .v { font-weight: 500; }
+
+  .action-block {
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    margin-top: 4px;
+  }
+  .action-block h4 {
+    font-size: 12px;
+    text-transform: none;
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .action-row:last-child { margin-bottom: 0; }
+
+  .toggle-btn {
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink-soft);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+  .toggle-btn.on-paid { background: var(--moss-soft); border-color: var(--moss); color: var(--moss); }
+  .toggle-btn.on-hw { background: var(--moss-soft); border-color: var(--moss); color: var(--moss); }
+  .toggle-btn.on-pending { background: var(--mustard-soft); border-color: var(--mustard); color: var(--mustard); }
+
+  .marks-inline { display: flex; gap: 6px; align-items: center; }
+  .marks-inline input {
+    width: 70px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 7px 8px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--spine);
+    color: var(--spine-ink);
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.toast-error { background: var(--brick); color: #fff; }
+
+  @media (max-width: 760px) {
+    .app { flex-direction: column; }
+    .spine {
+      position: static;
+      height: auto;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 14px 16px;
+      gap: 10px;
+      overflow: visible;
+    }
+    .spine-sub { display: none; }
+    .spine h1 { font-size: 16px; }
+    nav.tabs {
+      flex-direction: row;
+      margin-top: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    nav.tabs button { white-space: nowrap; flex: 0 0 auto; }
+    .spine-foot { font-size: 11px; }
+    main { padding: 22px 16px 48px; }
+    .reg-row { grid-template-columns: 1fr auto; row-gap: 6px; }
+    .reg-row .cl, .reg-row .sub, .reg-row.head { display: none; }
+    .field-grid, .detail-grid { grid-template-columns: 1fr; }
+  }
+
+  ::selection { background: var(--mustard-soft); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN / SIGNUP GATE -->
+<!-- LOADING SPLASH (shown until we know whether the teacher is signed in) -->
+<div id="authLoading" style="position:fixed; inset:0; z-index:300; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">
+  <div style="font-size:34px;">📘</div>
+  <div style="color:var(--ink-soft); font-size:13.5px;">Loading…</div>
+</div>
+
+<div id="authGate" style="position:fixed; inset:0; z-index:200; background:var(--paper); display:none; align-items:center; justify-content:center; padding:24px;">
+  <div style="width:100%; max-width:380px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <div style="font-size:34px;">📘</div>
+      <h1 style="font-size:22px; margin-top:8px;" id="authTitleName">Tuition Register</h1>
+      <div style="color:var(--ink-soft); font-size:13px; margin-top:4px;">Sign in to access your students</div>
+    </div>
+
+    <div class="panel" style="padding:22px;">
+      <div id="authFormTitle" style="font-weight:600; font-size:15px; margin-bottom:14px;">Log In</div>
+
+      <div class="field" style="margin-bottom:10px;">
+        <label>Email</label>
+        <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Password</label>
+        <div style="position:relative;">
+          <input id="authPassword" type="password" placeholder="At least 6 characters" autocomplete="current-password" style="width:100%; padding-right:64px;">
+          <button type="button" id="togglePasswordBtn" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:var(--focus); font-size:13px; font-weight:500; padding:8px 10px; cursor:pointer;">Show</button>
+        </div>
+      </div>
+
+      <div id="authError" style="color:var(--brick); font-size:12.5px; min-height:16px; margin:6px 0 10px;"></div>
+      <div id="authInfo" style="color:var(--moss); font-size:12.5px; min-height:16px; margin:-4px 0 10px; display:none;"></div>
+
+      <button class="btn btn-primary" id="authSubmitBtn" style="width:100%; padding:11px;">Log In</button>
+
+      <div style="text-align:center; margin-top:12px;">
+        <a href="javascript:void(0)" id="forgotPasswordLink" style="color:var(--ink-soft); font-size:12.5px;">Forgot password?</a>
+      </div>
+
+      <div style="text-align:center; margin-top:10px; font-size:13px; color:var(--ink-soft);">
+        <span id="authToggleLabel">Don't have an account?</span>
+        <a href="javascript:void(0)" id="authToggleLink" style="color:var(--focus); font-weight:500;">Create one</a>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:14px; font-size:11.5px; color:var(--ink-soft);">
+      Your data is private to your account only.
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
+  <aside class="spine">
+    <div>
+      <div class="spine-mark"><span class="num">📘</span><span class="label">REGISTER</span></div>
+      <h1 style="margin-top:10px; cursor:pointer;" id="centerTitle" title="Tap to rename">Tuition Register</h1>
+      <div class="spine-sub" id="spineSub">0 students recorded</div>
+      <div class="sync-badge" id="syncBadge" style="margin-top:6px;">☁ Connecting…</div>
+    </div>
+    <nav class="tabs">
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="students">Students <span class="count" id="navCount"></span></button>
+      <button data-view="batches">Batches</button>
+    </nav>
+    <div class="spine-foot">
+      <div id="spineAccountEmail" style="color:var(--spine-ink); margin-bottom:8px; word-break:break-all;"></div>
+      <a href="javascript:void(0)" id="logoutBtn" style="color:#F0D19E;">Log out</a>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div id="migrationBanner" class="panel" style="display:none; margin-bottom:18px; border-color:var(--mustard); background:var(--mustard-soft);">
+        <h3 style="margin-bottom:6px;">Older data found on this device</h3>
+        <div style="font-size:13.5px; color:var(--ink); margin-bottom:12px;">
+          We found <strong id="migrationCount">0</strong> student record(s) saved on this device from before you signed in.
+          Import them into your account now?
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary btn-sm" id="migrationImportBtn">Import into my account</button>
+          <button class="btn btn-sm" id="migrationDismissBtn">Not now</button>
+        </div>
+      </div>
+
+      <div class="view-head">
+        <div>
+          <h2>Dashboard</h2>
+          <div class="sub">Your whole tuition center at a glance</div>
+        </div>
+        <button class="btn btn-primary" id="dashAddBtn">+ New Student</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="n" id="sTotal">0</div><div class="l">Total Students</div></div>
+        <div class="stat-card"><div class="n" id="sBatches">0</div><div class="l">Total Batches</div></div>
+        <div class="stat-card good"><div class="n" id="sPaid">0</div><div class="l">Fee Paid</div></div>
+        <div class="stat-card warn"><div class="n" id="sPending">0</div><div class="l">Fee Pending</div></div>
+        <div class="stat-card good"><div class="n" id="sPresent">0</div><div class="l">Total Present</div></div>
+        <div class="stat-card bad"><div class="n" id="sAbsent">0</div><div class="l">Total Absent</div></div>
+        <div class="stat-card good"><div class="n" id="sHwDone">0</div><div class="l">Homework Completed</div></div>
+        <div class="stat-card warn"><div class="n" id="sHwPending">0</div><div class="l">Homework Pending</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Attendance by Class</h3>
+        <div id="attendanceByClass"></div>
+        <div class="empty" id="dashEmpty" style="display:none;">No students recorded yet. Add a new student above.</div>
+      </div>
+    </section>
+
+    <!-- STUDENTS -->
+    <section class="view" id="view-students">
+      <div class="view-head">
+        <div>
+          <h2>Students</h2>
+          <div class="sub">Search by name or phone number, or tap a row to open details</div>
+        </div>
+        <button class="btn btn-primary" id="listAddBtn">+ New Student</button>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-box" id="searchBox" placeholder="Search by name or phone…">
+        <select class="search-box" id="batchFilter" style="flex:0 0 160px;">
+          <option value="">All Batches</option>
+        </select>
+        <button class="btn" id="exportBtn">⬇ Download CSV</button>
+      </div>
+
+      <div class="register" id="registerList">
+        <div class="reg-row head">
+          <div>Name</div><div class="cl">Class / Batch</div><div class="sub">Subject</div><div>Fee</div><div>Homework</div><div></div>
+        </div>
+        <!-- rows injected -->
+      </div>
+      <div class="empty" id="listEmpty" style="display:none;">No students found.</div>
+    </section>
+
+    <!-- BATCHES -->
+    <section class="view" id="view-batches">
+      <div class="view-head">
+        <div>
+          <h2>Batches</h2>
+          <div class="sub">A batch is a group you teach together — it can mix students from different classes</div>
+        </div>
+      </div>
+
+      <div id="batchCards" class="stat-grid"></div>
+      <div class="empty" id="batchEmpty" style="display:none;">No students recorded yet. Add students and assign them a batch.</div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ADD / EDIT STUDENT MODAL -->
+<div class="overlay" id="formOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="formTitle">Add New Student</h3>
+      <button class="icon-x" id="formClose">✕</button>
+    </div>
+    <div class="field-grid">
+      <div class="field full">
+        <label>Student Name *</label>
+        <input id="fName" placeholder="e.g. Ali Khan">
+      </div>
+      <div class="field">
+        <label>Parent Name</label>
+        <input id="fParent" placeholder="e.g. Sara Khan">
+      </div>
+      <div class="field">
+        <label>Phone Number *</label>
+        <input id="fPhone" placeholder="e.g. 03001234567">
+      </div>
+      <div class="field">
+        <label>Class</label>
+        <input id="fClass" placeholder="e.g. 9th">
+      </div>
+      <div class="field">
+        <label>Batch</label>
+        <input id="fBatch" placeholder="e.g. Evening Batch">
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input id="fSubject" placeholder="e.g. Math">
+      </div>
+      <div class="field full">
+        <label>Monthly Fee (₹)</label>
+        <input id="fFee" type="number" min="0" step="0.01" placeholder="e.g. 3000">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" id="formCancel">Cancel</button>
+      <button class="btn btn-primary" id="formSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="sheet">
+    <div class="detail-top">
+      <div>
+        <div class="detail-name" id="dName">—</div>
+        <div class="detail-sub" id="dSub">—</div>
+      </div>
+      <button class="icon-x" id="detailClose">✕</button>
+    </div>
+
+    <div class="detail-grid">
+      <div><div class="k">Parent</div><div class="v" id="dParent">—</div></div>
+      <div><div class="k">Phone</div><div class="v" id="dPhone">—</div></div>
+      <div><div class="k">Batch</div><div class="v" id="dBatch">—</div></div>
+      <div><div class="k">Attendance</div><div class="v" id="dAttendance">—</div></div>
+      <div><div class="k">Latest Marks</div><div class="v" id="dMarks">—</div></div>
+    </div>
+
+    <div class="action-block">
+      <h4>Fee</h4>
+      <div class="action-row">
+        <button class="toggle-btn" id="feeToggle"></button>
+      </div>
+
+      <h4>Mark Attendance</h4>
+      <div class="action-row">
+        <button class="btn btn-sm" id="markPresent">✓ Present Today</button>
+        <button class="btn btn-sm" id="markAbsent">✕ Absent Today</button>
+      </div>
+
+      <h4>Homework</h4>
+      <div class="action-row">
+        <button class="toggle-btn" id="hwToggle"></button>
+      </div>
+
+      <h4>Add Test Marks</h4>
+      <div class="action-row marks-inline">
+        <input type="number" id="marksObtained" placeholder="Obtained" min="0">
+        <span style="color:var(--ink-soft)">/</span>
+        <input type="number" id="marksTotal" placeholder="Total" min="1">
+        <button class="btn btn-sm" id="saveMarks">Save</button>
+      </div>
+
+      <h4>Student Details</h4>
+      <div class="action-row">
+        <button class="btn btn-sm" id="editStudentBtn">Edit Details</button>
+        <button class="btn btn-sm btn-danger" id="deleteStudentBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var NAME_KEY = "tuition_register_center_name_v1";
+  var students = [];
+  var activePhone = null;   // phone of student open in detail sheet
+  var editingPhone = null;  // phone being edited via form (null = adding new)
+
+  // ---------- Firebase setup ----------
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyBWopNTEcDuop8plkjQVON04kzVBx6u5KU",
+    authDomain: "tution-management-a590a.firebaseapp.com",
+    projectId: "tution-management-a590a",
+    storageBucket: "tution-management-a590a.firebasestorage.app",
+    messagingSenderId: "220253577261",
+    appId: "1:220253577261:web:41a43368b39ca7feba58a4"
+  };
+  var firebaseReady = false;
+  var auth = null;
+  var fsdb = null;
+  try {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    fsdb = firebase.firestore();
+    firebaseReady = true;
+  } catch (e) {
+    console.error("Firebase failed to start:", e);
+  }
+  try {
+    if (fsdb) {
+      fsdb.enablePersistence({ synchronizeTabs: true }).catch(function (err) {
+        console.warn("Offline persistence not enabled:", err.code);
+      });
+    }
+  } catch (e) {}
+
+  var currentUid = null;
+  var studentsUnsub = null;
+
+  function studentsCollection() {
+    if (!currentUid) return null;
+    return fsdb.collection("users").doc(currentUid).collection("students");
+  }
+
+  // ---------- center branding (each buyer can rename this to their own center) ----------
+
+  function loadCenterName() {
+    var saved = "";
+    try { saved = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+    var name = saved || "Tuition Register";
+    document.getElementById("centerTitle").textContent = name;
+    document.getElementById("authTitleName").textContent = name;
+    document.title = name;
+  }
+
+  document.getElementById("centerTitle").addEventListener("click", function () {
+    var current = document.getElementById("centerTitle").textContent;
+    var next = prompt("Name your tuition center:", current === "Tuition Register" ? "" : current);
+    if (next === null) return;
+    next = next.trim();
+    if (!next) return;
+    try { localStorage.setItem(NAME_KEY, next); } catch (e) {}
+    document.getElementById("centerTitle").textContent = next;
+    document.getElementById("authTitleName").textContent = next;
+    document.title = next;
+  });
+
+  loadCenterName();
+
+  function findByPhone(phone) {
+    for (var i = 0; i < students.length; i++) {
+      if (students[i].phone === phone) return students[i];
+    }
+    return null;
+  }
+
+  // ---------- sync status badge ----------
+
+  function setSyncBadge(text, cls) {
+    var el = document.getElementById("syncBadge");
+    if (!el) return;
+    el.textContent = text;
+    el.className = "sync-badge " + (cls || "");
+  }
+
+  // ---------- cloud data (per signed-in teacher) ----------
+
+  function docIdFor(phone) {
+    var id = String(phone).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_");
+    return id || "unknown";
+  }
+
+  function startListening() {
+    var col = studentsCollection();
+    if (!col) return;
+    setSyncBadge("☁ Connecting…", "connecting");
+    studentsUnsub = col.onSnapshot(function (snap) {
+      students = snap.docs.map(function (d) {
+        var data = d.data() || {};
+        data.phone = data.phone || d.id;
+        return data;
+      });
+      setSyncBadge(navigator.onLine === false ? "📴 Offline — will sync later" : "☁ Synced to your account", "synced");
+      renderAll();
+      if (activePhone) renderDetail();
+      checkForMigration();
+    }, function (err) {
+      setSyncBadge("⚠ Sync error", "local");
+      showToast("Couldn't load your data (" + err.code + "). Check your internet connection.", "error");
+    });
+  }
+
+  function stopListening() {
+    if (studentsUnsub) { studentsUnsub(); studentsUnsub = null; }
+    students = [];
+  }
+
+  window.addEventListener("online", function () {
+    if (currentUid) setSyncBadge("☁ Synced to your account", "synced");
+  });
+  window.addEventListener("offline", function () {
+    if (currentUid) setSyncBadge("📴 Offline — will sync later", "local");
+  });
+
+  // Add or fully replace a student's record. Returns a Promise that resolves on confirmed save.
+  function saveStudent(student) {
+    var col = studentsCollection();
+    if (!col) return Promise.reject({ code: "not-signed-in" });
+    return col.doc(docIdFor(student.phone)).set(student);
+  }
+
+  // Merge fields into an existing student's record. Returns a Promise that resolves on confirmed save.
+  function updateStudent(phone, fields) {
+    var col = studentsCollection();
+    if (!col) return Promise.reject({ code: "not-signed-in" });
+    return col.doc(docIdFor(phone)).update(fields);
+  }
+
+  // Rename a student's key (phone changed) while also updating other fields.
+  // Returns a Promise that resolves once the change is safely confirmed.
+  function renameStudent(oldPhone, newPhone, fullRecord) {
+    var col = studentsCollection();
+    if (!col) return Promise.reject({ code: "not-signed-in" });
+    var oldId = docIdFor(oldPhone);
+    var newId = docIdFor(newPhone);
+
+    // If both phones map to the same document id, this is really just a field update —
+    // no create+delete needed, so there's no risk of ending up with two records.
+    if (oldId === newId) {
+      return col.doc(oldId).update(fullRecord);
+    }
+
+    // Create the new record FIRST, and only remove the old one after that succeeds.
+    // If the delete step fails, we deliberately do not silently hide it — the caller
+    // is told so the teacher can remove the leftover old record themselves.
+    return col.doc(newId).set(fullRecord).then(function () {
+      return col.doc(oldId).delete().catch(function (delErr) {
+        delErr.partialRename = true;
+        throw delErr;
+      });
+    });
+  }
+
+  function deleteStudent(phone) {
+    var col = studentsCollection();
+    if (!col) return Promise.reject({ code: "not-signed-in" });
+    return col.doc(docIdFor(phone)).delete();
+  }
+
+  // ---------- toast ----------
+
+  var toastTimer = null;
+  function showToast(msg, type) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "toast show" + (type ? " toast-" + type : "");
+    clearTimeout(toastTimer);
+    var duration = type === "error" ? 4200 : 2200;
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, duration);
+  }
+
+  // ---------- tabs ----------
+
+  var tabButtons = document.querySelectorAll("nav.tabs button");
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      tabButtons.forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+      document.getElementById("view-" + btn.dataset.view).classList.add("active");
+    });
+  });
+
+  function goToStudents() {
+    tabButtons.forEach(function (b) { b.classList.toggle("active", b.dataset.view === "students"); });
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+    document.getElementById("view-students").classList.add("active");
+  }
+
+  // ---------- render: dashboard ----------
+
+  function renderDashboard() {
+    var total = students.length;
+    var paid = 0, pending = 0, present = 0, absent = 0, hwDone = 0, hwPending = 0;
+    var byClass = {};
+    var batchNames = {};
+
+    students.forEach(function (s) {
+      if (s.feeStatus === "Paid") paid++; else pending++;
+      present += s.present;
+      absent += (s.attendance - s.present);
+      if (s.homework === "Completed") hwDone++; else hwPending++;
+      batchNames[s.batch || "Unassigned"] = true;
+
+      var cls = s.class || "Unclassified";
+      if (!byClass[cls]) byClass[cls] = { present: 0, attendance: 0 };
+      byClass[cls].present += s.present;
+      byClass[cls].attendance += s.attendance;
+    });
+
+    document.getElementById("sTotal").textContent = total;
+    document.getElementById("sBatches").textContent = total === 0 ? 0 : Object.keys(batchNames).length;
+    document.getElementById("sPaid").textContent = paid;
+    document.getElementById("sPending").textContent = pending;
+    document.getElementById("sPresent").textContent = present;
+    document.getElementById("sAbsent").textContent = absent;
+    document.getElementById("sHwDone").textContent = hwDone;
+    document.getElementById("sHwPending").textContent = hwPending;
+    document.getElementById("spineSub").textContent = total + " students recorded";
+    document.getElementById("navCount").textContent = total ? total : "";
+
+    var barsEl = document.getElementById("attendanceByClass");
+    var emptyEl = document.getElementById("dashEmpty");
+    barsEl.innerHTML = "";
+
+    var classNames = Object.keys(byClass);
+    if (total === 0) {
+      emptyEl.style.display = "block";
+      barsEl.parentElement.querySelector("h3").style.display = "none";
+    } else {
+      emptyEl.style.display = "none";
+      barsEl.parentElement.querySelector("h3").style.display = "block";
+      if (classNames.length === 0) {
+        barsEl.innerHTML = '<div class="empty">No attendance recorded yet.</div>';
+      }
+      classNames.forEach(function (cls) {
+        var c = byClass[cls];
+        var pct = c.attendance > 0 ? Math.round((c.present / c.attendance) * 100) : 0;
+        var row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML =
+          '<div class="name">' + escapeHtml(cls) + '</div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' +
+            (pct >= 75 ? "var(--moss)" : pct >= 50 ? "var(--mustard)" : "var(--brick)") + ';"></div></div>' +
+          '<div class="val">' + pct + '%</div>';
+        barsEl.appendChild(row);
+      });
+    }
+  }
+
+  // ---------- render: students list ----------
+
+  function renderList() {
+    var q = document.getElementById("searchBox").value.trim().toLowerCase();
+    var batchQ = document.getElementById("batchFilter").value;
+    var container = document.getElementById("registerList");
+    var emptyEl = document.getElementById("listEmpty");
+
+    // clear all but header row
+    Array.prototype.slice.call(container.querySelectorAll(".reg-row.item")).forEach(function (el) { el.remove(); });
+
+    var filtered = students.filter(function (s) {
+      var matchesQ = !q || s.name.toLowerCase().indexOf(q) !== -1 || s.phone.toLowerCase().indexOf(q) !== -1;
+      var matchesBatch = !batchQ || (s.batch || "Unassigned") === batchQ;
+      return matchesQ && matchesBatch;
+    });
+
+    emptyEl.style.display = filtered.length === 0 ? "block" : "none";
+    container.style.display = filtered.length === 0 && students.length === 0 ? "none" : "block";
+    if (students.length === 0) {
+      emptyEl.textContent = "No students recorded yet. Add a new student above.";
+      emptyEl.style.display = "block";
+      container.style.display = "none";
+    } else if (filtered.length === 0) {
+      emptyEl.textContent = "No students match your search.";
+    }
+
+    filtered.forEach(function (s) {
+      var row = document.createElement("div");
+      row.className = "reg-row item";
+      var clBatch = (s.class || "—") + (s.batch ? " • " + s.batch : "");
+      row.innerHTML =
+        '<div><div class="nm">' + escapeHtml(s.name) + '</div><div class="ph">' + escapeHtml(s.phone) + '</div></div>' +
+        '<div class="cl">' + escapeHtml(clBatch) + '</div>' +
+        '<div class="sub">' + escapeHtml(s.subject || "—") + '</div>' +
+        '<div><span class="pill ' + (s.feeStatus === "Paid" ? "paid" : "pending") + '">' +
+          (s.feeStatus === "Paid" ? "Paid" : "Pending") + '</span></div>' +
+        '<div><span class="pill ' + (s.homework === "Completed" ? "done" : "hwpending") + '">' +
+          (s.homework === "Completed" ? "Done" : "Pending") + '</span></div>' +
+        '<div style="text-align:right; color:var(--ink-soft);">›</div>';
+      row.addEventListener("click", function () { openDetail(s.phone); });
+      container.appendChild(row);
+    });
+  }
+
+  document.getElementById("searchBox").addEventListener("input", renderList);
+  document.getElementById("batchFilter").addEventListener("change", renderList);
+
+  function refreshBatchFilterOptions() {
+    var select = document.getElementById("batchFilter");
+    var current = select.value;
+    var names = {};
+    students.forEach(function (s) { names[s.batch || "Unassigned"] = true; });
+    var sorted = Object.keys(names).sort();
+    select.innerHTML = '<option value="">All Batches</option>';
+    sorted.forEach(function (n) {
+      var opt = document.createElement("option");
+      opt.value = n; opt.textContent = n;
+      select.appendChild(opt);
+    });
+    if (names[current]) select.value = current;
+  }
+
+  // ---------- render: batches ----------
+
+  function renderBatches() {
+    var cardsEl = document.getElementById("batchCards");
+    var emptyEl = document.getElementById("batchEmpty");
+    cardsEl.innerHTML = "";
+
+    if (students.length === 0) {
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    var groups = {};
+    students.forEach(function (s) {
+      var b = s.batch || "Unassigned";
+      if (!groups[b]) groups[b] = [];
+      groups[b].push(s);
+    });
+
+    Object.keys(groups).sort().forEach(function (batchName) {
+      var list = groups[batchName];
+      var classes = {};
+      var feePending = 0;
+      list.forEach(function (s) {
+        classes[s.class || "—"] = true;
+        if (s.feeStatus !== "Paid") feePending++;
+      });
+      var classNames = Object.keys(classes).join(", ");
+
+      var card = document.createElement("div");
+      card.className = "panel";
+      card.style.cursor = "pointer";
+      card.innerHTML =
+        '<h3 style="margin-bottom:8px;">' + escapeHtml(batchName) + '</h3>' +
+        '<div style="font-size:13px; color:var(--ink-soft); margin-bottom:10px;">Classes: ' + escapeHtml(classNames || "—") + '</div>' +
+        '<div style="display:flex; gap:18px; font-size:13.5px;">' +
+          '<div><strong>' + list.length + '</strong> students</div>' +
+          '<div style="color:' + (feePending > 0 ? "var(--mustard)" : "var(--moss)") + ';"><strong>' + feePending + '</strong> fee pending</div>' +
+        '</div>';
+      card.addEventListener("click", function () {
+        document.getElementById("batchFilter").value = batchName;
+        goToStudents();
+        renderList();
+      });
+      cardsEl.appendChild(card);
+    });
+  }
+
+  function renderAll() {
+    renderDashboard();
+    refreshBatchFilterOptions();
+    renderList();
+    renderBatches();
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---------- add / edit form ----------
+
+  var formOverlay = document.getElementById("formOverlay");
+
+  function openAddForm() {
+    editingPhone = null;
+    document.getElementById("formTitle").textContent = "Add New Student";
+    document.getElementById("fName").value = "";
+    document.getElementById("fParent").value = "";
+    document.getElementById("fPhone").value = "";
+    document.getElementById("fClass").value = "";
+    document.getElementById("fBatch").value = "";
+    document.getElementById("fSubject").value = "";
+    document.getElementById("fFee").value = "";
+    document.getElementById("formSave").disabled = false;
+    document.getElementById("formSave").textContent = "Save";
+    formOverlay.classList.add("open");
+    document.getElementById("fName").focus();
+  }
+
+  function openEditForm(phone) {
+    var s = findByPhone(phone);
+    if (!s) return;
+    editingPhone = phone;
+    document.getElementById("formTitle").textContent = "Edit Student Details";
+    document.getElementById("fName").value = s.name;
+    document.getElementById("fParent").value = s.parent;
+    document.getElementById("fPhone").value = s.phone;
+    document.getElementById("fClass").value = s.class;
+    document.getElementById("fBatch").value = s.batch || "";
+    document.getElementById("fSubject").value = s.subject;
+    document.getElementById("fFee").value = s.fee;
+    document.getElementById("formSave").disabled = false;
+    document.getElementById("formSave").textContent = "Save";
+    formOverlay.classList.add("open");
+    document.getElementById("fName").focus();
+  }
+
+  function closeForm() { formOverlay.classList.remove("open"); }
+
+  document.getElementById("dashAddBtn").addEventListener("click", openAddForm);
+  document.getElementById("listAddBtn").addEventListener("click", openAddForm);
+  document.getElementById("formClose").addEventListener("click", closeForm);
+  document.getElementById("formCancel").addEventListener("click", closeForm);
+  formOverlay.addEventListener("click", function (e) { if (e.target === formOverlay) closeForm(); });
+
+  document.getElementById("formSave").addEventListener("click", function () {
+    var name = document.getElementById("fName").value.trim();
+    var parent = document.getElementById("fParent").value.trim();
+    var phone = document.getElementById("fPhone").value.trim();
+    var cls = document.getElementById("fClass").value.trim();
+    var batch = document.getElementById("fBatch").value.trim();
+    var subject = document.getElementById("fSubject").value.trim();
+    var feeRaw = document.getElementById("fFee").value;
+    var fee = feeRaw === "" ? 0 : parseFloat(feeRaw);
+
+    if (!name) { showToast("Please enter the student's name.", "error"); return; }
+    if (!phone) { showToast("Please enter a phone number.", "error"); return; }
+    if (isNaN(fee) || fee < 0) { showToast("Invalid fee amount.", "error"); return; }
+
+    var duplicate = findByPhone(phone);
+    if (duplicate && duplicate.phone !== editingPhone) {
+      showToast("This phone number is already used by another student.", "error");
+      return;
+    }
+
+    var saveBtn = document.getElementById("formSave");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+
+    function finishSaveUI() {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+
+    if (editingPhone === null) {
+      var newStudent = {
+        name: name, parent: parent, phone: phone, class: cls, batch: batch, subject: subject,
+        fee: fee, feeStatus: "Pending", attendance: 0, present: 0,
+        marks: "No test yet", homework: "Pending"
+      };
+      saveStudent(newStudent).then(function () {
+        finishSaveUI();
+        showToast("Student added.", "success");
+        closeForm();
+      }).catch(function (err) {
+        finishSaveUI();
+        showToast("Couldn't save — " + (err && err.code ? err.code : "check your connection") + ". Nothing was lost, please try again.", "error");
+      });
+      return;
+    } else {
+      var existing = findByPhone(editingPhone);
+      var updated = Object.assign({}, existing, {
+        name: name, parent: parent, phone: phone, class: cls, batch: batch, subject: subject, fee: fee
+      });
+      var savePromise = (phone !== editingPhone)
+        ? renameStudent(editingPhone, phone, updated)
+        : saveStudent(updated);
+
+      savePromise.then(function () {
+        finishSaveUI();
+        showToast("Details updated.", "success");
+        if (activePhone === editingPhone) activePhone = phone;
+        closeForm();
+      }).catch(function (err) {
+        finishSaveUI();
+        if (err && err.partialRename) {
+          showToast("Saved under the new number, but the old record (" + editingPhone + ") couldn't be removed — please delete it manually.", "error");
+          if (activePhone === editingPhone) activePhone = phone;
+          closeForm();
+        } else {
+          showToast("Couldn't save changes — " + (err && err.code ? err.code : "check your connection") + ". Please try again.", "error");
+        }
+      });
+    }
+  });
+
+  // ---------- detail sheet ----------
+
+  var detailOverlay = document.getElementById("detailOverlay");
+
+  function openDetail(phone) {
+    activePhone = phone;
+    renderDetail();
+    detailOverlay.classList.add("open");
+  }
+
+  function closeDetail() {
+    detailOverlay.classList.remove("open");
+    activePhone = null;
+  }
+
+  document.getElementById("detailClose").addEventListener("click", closeDetail);
+  detailOverlay.addEventListener("click", function (e) { if (e.target === detailOverlay) closeDetail(); });
+
+  function renderDetail() {
+    var s = findByPhone(activePhone);
+    if (!s) { closeDetail(); return; }
+
+    document.getElementById("dName").textContent = s.name;
+    document.getElementById("dSub").textContent = (s.class || "—") + " · " + (s.subject || "—");
+    document.getElementById("dParent").textContent = s.parent || "—";
+    document.getElementById("dPhone").textContent = s.phone;
+    document.getElementById("dBatch").textContent = s.batch || "Unassigned";
+    document.getElementById("dAttendance").textContent = s.present + " / " + s.attendance +
+      (s.attendance > 0 ? "  (" + Math.round((s.present / s.attendance) * 100) + "%)" : "");
+    document.getElementById("dMarks").textContent = s.marks;
+
+    var feeBtn = document.getElementById("feeToggle");
+    feeBtn.textContent = s.feeStatus === "Paid" ? "✓ Fee Paid — mark Pending" : "Fee Pending — mark Paid";
+    feeBtn.className = "toggle-btn " + (s.feeStatus === "Paid" ? "on-paid" : "on-pending");
+
+    var hwBtn = document.getElementById("hwToggle");
+    hwBtn.textContent = s.homework === "Completed" ? "✓ Homework Completed — mark Pending" : "Homework Pending — mark Completed";
+    hwBtn.className = "toggle-btn " + (s.homework === "Completed" ? "on-hw" : "on-pending");
+
+    document.getElementById("marksObtained").value = "";
+    document.getElementById("marksTotal").value = "";
+  }
+
+  document.getElementById("feeToggle").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    var newStatus = s.feeStatus === "Paid" ? "Pending" : "Paid";
+    updateStudent(s.phone, { feeStatus: newStatus }).then(function () {
+      showToast(newStatus === "Paid" ? "Fee marked as paid." : "Fee marked as pending.", "success");
+    }).catch(function (err) {
+      showToast("Couldn't update fee status — try again.", "error");
+    });
+  });
+
+  document.getElementById("hwToggle").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    var newHw = s.homework === "Completed" ? "Pending" : "Completed";
+    updateStudent(s.phone, { homework: newHw }).then(function () {
+      showToast(newHw === "Completed" ? "Homework marked as completed." : "Homework marked as pending.", "success");
+    }).catch(function () {
+      showToast("Couldn't update homework — try again.", "error");
+    });
+  });
+
+  document.getElementById("markPresent").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    updateStudent(s.phone, { attendance: s.attendance + 1, present: s.present + 1 }).then(function () {
+      showToast("Marked present today.", "success");
+    }).catch(function () {
+      showToast("Couldn't save attendance — try again.", "error");
+    });
+  });
+
+  document.getElementById("markAbsent").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    updateStudent(s.phone, { attendance: s.attendance + 1 }).then(function () {
+      showToast("Marked absent today.", "success");
+    }).catch(function () {
+      showToast("Couldn't save attendance — try again.", "error");
+    });
+  });
+
+  document.getElementById("saveMarks").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    var obtained = parseFloat(document.getElementById("marksObtained").value);
+    var total = parseFloat(document.getElementById("marksTotal").value);
+    if (isNaN(obtained) || isNaN(total) || total <= 0 || obtained < 0 || obtained > total) {
+      showToast("Invalid marks.", "error");
+      return;
+    }
+    var pct = (obtained / total) * 100;
+    updateStudent(s.phone, { marks: obtained + "/" + total + " (" + pct.toFixed(2) + "%)" }).then(function () {
+      showToast("Marks saved.", "success");
+    }).catch(function () {
+      showToast("Couldn't save marks — try again.", "error");
+    });
+  });
+
+  document.getElementById("editStudentBtn").addEventListener("click", function () {
+    if (!activePhone) return;
+    openEditForm(activePhone);
+  });
+
+  document.getElementById("deleteStudentBtn").addEventListener("click", function () {
+    var s = findByPhone(activePhone);
+    if (!s) return;
+    if (!confirm("Remove " + s.name + " from the register?")) return;
+    deleteStudent(s.phone).then(function () {
+      closeDetail();
+      showToast("Student deleted.", "success");
+    }).catch(function () {
+      showToast("Couldn't delete — try again.", "error");
+    });
+  });
+
+  // ---------- export ----------
+
+  function csvField(v) {
+    var s = String(v == null ? "" : v);
+    if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function downloadCsvViaBrowser(csv) {
+    try {
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "students.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      showToast("Download started.", "success");
+    } catch (e) {
+      showToast("Couldn't download right now.", "error");
+    }
+  }
+
+  document.getElementById("exportBtn").addEventListener("click", function () {
+    if (students.length === 0) { showToast("No students to export yet.", "error"); return; }
+
+    var header = ["Name","Parent","Phone","Class","Batch","Subject","Fee","FeeStatus","Sessions","Present","Marks","Homework"];
+    var lines = [header.join(",")];
+    students.forEach(function (s) {
+      lines.push([
+        csvField(s.name), csvField(s.parent), csvField(s.phone), csvField(s.class), csvField(s.batch),
+        csvField(s.subject), csvField(s.fee), csvField(s.feeStatus), csvField(s.attendance),
+        csvField(s.present), csvField(s.marks), csvField(s.homework)
+      ].join(","));
+    });
+    var csv = lines.join("\n");
+    downloadCsvViaBrowser(csv);
+  });
+
+  // ---------- one-time import of pre-login local data ----------
+
+  var OLD_LOCAL_KEY = "tuition_register_students_v1";
+
+  function checkForMigration() {
+    if (!currentUid) return;
+    var dismissKey = "migration_dismissed_" + currentUid;
+    var alreadyDismissed = false;
+    try { alreadyDismissed = localStorage.getItem(dismissKey) === "1"; } catch (e) {}
+    if (alreadyDismissed) return;
+    if (students.length > 0) return; // only offer when the account has no cloud data yet
+
+    var oldData = [];
+    try {
+      var raw = localStorage.getItem(OLD_LOCAL_KEY);
+      oldData = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(oldData)) oldData = [];
+    } catch (e) { oldData = []; }
+
+    if (oldData.length === 0) return;
+
+    document.getElementById("migrationCount").textContent = oldData.length;
+    document.getElementById("migrationBanner").style.display = "block";
+
+    document.getElementById("migrationImportBtn").onclick = function () {
+      var btn = document.getElementById("migrationImportBtn");
+      btn.disabled = true;
+      btn.textContent = "Importing…";
+
+      var writes = oldData
+        .filter(function (s) { return s && s.phone; })
+        .map(function (s) { return saveStudent(s); });
+
+      Promise.all(writes).then(function () {
+        try { localStorage.setItem(dismissKey, "1"); } catch (e) {}
+        document.getElementById("migrationBanner").style.display = "none";
+        showToast("Imported " + writes.length + " student record(s).", "success");
+      }).catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "Import into my account";
+        showToast("Import failed partway through (" + (err && err.code ? err.code : "error") + "). Your old data is still safe on this device — try again.", "error");
+      });
+    };
+
+    document.getElementById("migrationDismissBtn").onclick = function () {
+      try { localStorage.setItem(dismissKey, "1"); } catch (e) {}
+      document.getElementById("migrationBanner").style.display = "none";
+    };
+  }
+
+  // ---------- authentication (login / signup / logout) ----------
+
+  var authMode = "login";
+
+  function friendlyAuthError(code) {
+    var map = {
+      "auth/invalid-email": "That email address doesn't look right.",
+      "auth/user-not-found": "No account found with that email.",
+      "auth/wrong-password": "Incorrect password.",
+      "auth/invalid-credential": "Incorrect email or password.",
+      "auth/email-already-in-use": "An account already exists with that email — try logging in instead.",
+      "auth/weak-password": "Password is too weak — use at least 6 characters.",
+      "auth/network-request-failed": "No internet connection — please check and try again.",
+      "auth/too-many-requests": "Too many attempts — please wait a moment and try again."
+    };
+    return map[code] || ("Something went wrong (" + code + "). Please try again.");
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    var isLogin = mode === "login";
+    document.getElementById("authFormTitle").textContent = isLogin ? "Log In" : "Create Account";
+    document.getElementById("authSubmitBtn").textContent = isLogin ? "Log In" : "Create Account";
+    document.getElementById("authToggleLabel").textContent = isLogin ? "Don't have an account?" : "Already have an account?";
+    document.getElementById("authToggleLink").textContent = isLogin ? "Create one" : "Log in";
+    document.getElementById("authError").textContent = "";
+    document.getElementById("authInfo").style.display = "none";
+    document.getElementById("forgotPasswordLink").style.display = isLogin ? "inline" : "none";
+  }
+
+  document.getElementById("authToggleLink").addEventListener("click", function () {
+    setAuthMode(authMode === "login" ? "signup" : "login");
+  });
+
+  var FIREBASE_UNAVAILABLE_MSG = "The login system couldn't load. Please open this app from its website link with an internet connection (not from a preview or a saved file), then try again.";
+
+  document.getElementById("togglePasswordBtn").addEventListener("click", function () {
+    var input = document.getElementById("authPassword");
+    var showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    this.textContent = showing ? "Show" : "Hide";
+  });
+
+  document.getElementById("authSubmitBtn").addEventListener("click", function () {
+    var email = document.getElementById("authEmail").value.trim();
+    var password = document.getElementById("authPassword").value;
+    var errEl = document.getElementById("authError");
+    errEl.textContent = "";
+
+    if (!firebaseReady) { errEl.textContent = FIREBASE_UNAVAILABLE_MSG; return; }
+    if (!email || !password) { errEl.textContent = "Please enter both email and password."; return; }
+    if (authMode === "signup" && password.length < 6) {
+      errEl.textContent = "Password must be at least 6 characters."; return;
+    }
+
+    var btn = document.getElementById("authSubmitBtn");
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Please wait…";
+
+    var timedOut = false;
+    var timeoutId = setTimeout(function () {
+      timedOut = true;
+      errEl.textContent = "No response from the server. Check your internet connection. If it is fine, this page is probably being shown inside a preview or opened as a saved file — open the app from its website link instead.";
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }, 15000);
+
+    var action = authMode === "login"
+      ? auth.signInWithEmailAndPassword(email, password)
+      : auth.createUserWithEmailAndPassword(email, password);
+
+    action.catch(function (err) {
+      if (timedOut) return;
+      errEl.textContent = friendlyAuthError(err.code);
+    }).then(function () {
+      clearTimeout(timeoutId);
+      if (timedOut) return;
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+  });
+
+  document.getElementById("forgotPasswordLink").addEventListener("click", function () {
+    var email = document.getElementById("authEmail").value.trim();
+    var errEl = document.getElementById("authError");
+    var infoEl = document.getElementById("authInfo");
+    errEl.textContent = "";
+    infoEl.style.display = "none";
+
+    if (!firebaseReady) { errEl.textContent = FIREBASE_UNAVAILABLE_MSG; return; }
+    if (!email) {
+      errEl.textContent = "Type your email above first, then tap \"Forgot password?\" again.";
+      return;
+    }
+
+    auth.sendPasswordResetEmail(email).then(function () {
+      infoEl.textContent = "Password reset email sent to " + email + " — check your inbox.";
+      infoEl.style.display = "block";
+    }).catch(function (err) {
+      errEl.textContent = friendlyAuthError(err.code);
+    });
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", function () {
+    if (firebaseReady) auth.signOut();
+  });
+
+  function hideLoadingSplash() {
+    var el = document.getElementById("authLoading");
+    if (el) el.style.display = "none";
+  }
+
+  if (!firebaseReady) {
+    document.getElementById("authError").textContent = FIREBASE_UNAVAILABLE_MSG;
+    document.getElementById("authGate").style.display = "flex";
+    hideLoadingSplash();
+  } else {
+    // Safety net: if Firebase takes unusually long to answer, show the login
+    // screen instead of leaving the teacher staring at "Loading…" forever.
+    var splashTimeout = setTimeout(function () {
+      if (!currentUid) document.getElementById("authGate").style.display = "flex";
+      hideLoadingSplash();
+    }, 8000);
+
+    auth.onAuthStateChanged(function (user) {
+      clearTimeout(splashTimeout);
+      if (user) {
+        currentUid = user.uid;
+        document.getElementById("authGate").style.display = "none";
+        document.getElementById("mainApp").style.display = "flex";
+        document.getElementById("spineAccountEmail").textContent = user.email || "";
+        document.getElementById("authEmail").value = "";
+        document.getElementById("authPassword").value = "";
+        document.getElementById("authPassword").type = "password";
+        document.getElementById("togglePasswordBtn").textContent = "Show";
+        startListening();
+      } else {
+        currentUid = null;
+        stopListening();
+        document.getElementById("mainApp").style.display = "none";
+        document.getElementById("authGate").style.display = "flex";
+      }
+      hideLoadingSplash();
+    });
+  }
+})();
+</script>
+</body>
+</html>
